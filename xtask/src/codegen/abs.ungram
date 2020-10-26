@@ -1,0 +1,224 @@
+Name = 'ident'
+
+Path =
+  (qualifier:Path '.')? segment:Name
+
+ParamList = '(' (ParamDecl (',' ParamDecl)*)? ')'
+
+ParamDecl = Annotations* Type Name
+
+Type = Annotations* Path ('<' Type (',' Type)* '>')?
+
+Annotation = (Type ':')? PureExpr
+Annotations = '[' Annotation (',' Annotation)* ']'
+
+// Expressions
+
+Expr = PureExpr | EffExpr
+
+PureExpr =
+  | FnExpr
+  | PartialFnExpr
+  | VariadicFnExpr
+  | ConstructorExpr
+  | UnaryExpr
+  | BinaryExpr
+  | NameExpr
+  | Literal
+  | ThisExpr
+  | NullExpr
+  | ImplementsExpr
+  | AsExpr
+  | WhenExpr
+  | CaseExpr
+  | LetExpr
+  | ParenExpr
+
+
+FnExpr = Path '(' PureExprList ')'
+
+PartialFnExpr = Path '(' FnList ')'  '(' PureArgs ')'
+
+VariadicFnExpr = Path '[' PureExprList ']'
+  
+ConstructorExpr = Path ('(' PureExprList ')')?
+
+UnaryExpr = op:('-' | '!') PureExpr
+
+BinaryExpr = 
+  lhs:Expr 
+  op:(
+    '||' | '&&'
+    | '==' | '!=' | '<=' | '>=' | '>' | '<'
+    | '+' | '-' | '*' | '/' | '%'
+  )
+  rhs:Expr
+
+NameExpr = ('this' '.')? Name
+
+Literal =
+   'int_number' | 'float_number'
+    | 'string'
+
+ThisExpr = 'this'
+
+NullExpr = 'null'
+
+ImplementsExpr = PureExpr 'implements' Name
+
+AsExpr = PureExpr 'as' Name
+
+WhenExpr = ('when' | 'if') condition:PureExpr 'then' then_branch:PureExpr 'else' else_branch:PureExpr
+
+CaseExpr = 'case' PureExpr '{' CaseExprBranch '}'
+
+LetExpr = 'let' 'in' PureExpr
+
+ParenExpr = '(' PureExpr ')'
+
+PureExprList = (PureExpr (',' PureExpr)*)?
+
+FnList = FnListParam (',' FnListParam)?
+
+FnListParam = Name | AnonFn
+
+AnonFn = ParamList '=>' PureExpr
+
+CaseExprBranch = '|'? Pattern '=>' PureExpr ';'?
+
+LetDefs = LetDef LetDef*
+
+LetDef = ( '(' Type Name '=' PureExpr ')' ) | ( Type Name '=' PureExpr )
+
+EffExpr = 
+    GetExpr
+  | NewExpr
+  | AsyncCallExpr
+  | SynCallExpr
+  | OriginalCallExpr
+
+GetExpr = PureExpr '.' 'get'
+
+NewExpr = 'new' 'local'? class:Path '(' PureExprList ')'
+
+AsyncCallExpr = 'await'? callee:PureExpr '!' Name '(' PureExprList ')'
+
+SyncCallExpr = callee:PureExpr '.' Name '(' PureExprList ')'
+
+OriginalCallExpr = (('int_number' | 'core') '.' )? 'original' '(' PureExprList ')'
+
+// Statements
+
+Stmt =
+    VarDeclStmt
+  | AssignStmt
+  | SkipStmt
+  | ReturnStmt
+  | AssertStmt
+  | Block
+  | IfStmt
+  | SwitchStmt
+  | WhileStmt
+  | ForeachStmt
+  | TryCatchFinallyStmt
+  | AwaitStmt
+  | SuspendStmt
+  | DurationStmt
+  | ThrowStmt
+  | DieStmt
+  | MoveCogToStmt
+  | ExprStmt
+
+VarDeclStmt = Annotations* Type Name ('=' Expr)? ';'
+
+AssignStmt = Annotations* NameExpr '=' Expr ';'
+
+SkipStmt = Annotations* 'skip' ';'
+
+ReturnStmt = Annotations* 'return' Expr ';'
+
+AssertStmt = Annotations* 'assert' Expr ';'
+
+Block = Annotations* '{' Stmt* '}'
+
+IfStmt = Annotations* 'if' '(' condition:PureExpr ')' then_branch:Stmt ('else' else_branch: Stmt)?
+
+SwitchStmt = Annotations* ('switch' | 'case') '(' PureExpr ')' '{' CaseStmtBranch* '}'
+
+WhileStmt = Annotations* 'while' '(' condition:PureExpr ')' body:Stmt
+
+ForeachStmt Annotations* 'foreach' '(' var:Name (',' index:Name)? 'in' PureExpr ')' Stmt
+
+TryCatchFinallyStmt = Annotations* 'try' Stmt 'catch' (('{' CaseStmtBranch* '}') | CaseStmtBranch) ('finally' finally:Stmt)
+
+AwaitStmt = Annotations* 'await' Guard ';'
+
+SuspendStmt = Annotations* 'suspend' ';'
+
+DurationStmt = 'duration' '(' min:PureExpr ',' max:PureExpr ')' ';'
+
+ThrowStmt = Annotations* 'throw' PureExpr ';'
+
+DieStmt = Annotations* 'die' PureExpr ';'
+
+MoveCogToStmt = Annotations* 'movecogto' PureExpr ';'
+
+ExprStmt = Annotations* Expr ';'
+
+Guard = 
+    ClaimGuard
+  | DurationGuard
+  | ExprGuard
+  | AndGuard
+
+ClaimGuard = NameExpr '?'
+
+DurationGuard = 'duration' '(' min:PureExpr ',' max:PureExpr ')'
+
+ExprGuard = PureExpr
+
+AndGuard = left:Guard '&' right:Guard
+
+CaseStmtBranch = Pattern '=>' Stmt
+
+// Pattern
+
+Pattern = 
+    WildCardPattern
+  | IntPattern
+  | StringPattern
+  | VarPattern
+  | ConstructorPattern
+
+WildCardPattern = '_'
+
+IntPattern = 'int_number'
+
+StringPattern = 'string'
+
+VarPattern = Name
+
+ConstructorPattern = Path ( '(' (Pattern (',' Pattern)*)? ')' )?
+
+// Decl
+
+DataTypeDecl = Annotations* 'data' Path
+  GenericArgList? DataConstructorList? ';'
+
+GenericArgList = '<' Name (',' Name)* '>'
+
+DataConstructorList = '=' DataConstructor ('|' DataConstructor)*
+
+DataConstructor = Name ('(' DataConstructorArgList ')')?
+
+DataConstructorArgList = DataConstructorArg (',' DataConstructorArg)*
+
+DataConstructorArg = Type Name?
+
+TypeSyn = Annotations* 'type' Path '=' Type ';'
+
+ExceptionDecl = Annotations* 'exception' Path ( '(' DataConstructorArgList ')' )? ';'
+
+FunctionDecl = Annotations* 'def' Type Path GenericArgList? ParamList '=' ('builtin' | body:PureExpr) ';'
+
+
