@@ -3,14 +3,14 @@ Name = 'ident'
 Path =
   (qualifier:Path '.')? segment:Name
 
-ParamList = '(' (ParamDecl (',' ParamDecl)*)? ')'
+ParamList = '(' (Param (',' Param)*)? ')'
 
-ParamDecl = Annotations* Type Name
+Param = Annotations* Type Name
 
-Type = Annotations* Path ('<' Type (',' Type)* '>')?
+Type = Annotations* Path ('<' (Type (',' Type)*) '>')?
 
 Annotation = (Type ':')? PureExpr
-Annotations = '[' Annotation (',' Annotation)* ']'
+Annotations = '[' (Annotation (',' Annotation)*) ']'
 
 // Expressions
 
@@ -205,9 +205,9 @@ ConstructorPattern = Path ( '(' (Pattern (',' Pattern)*)? ')' )?
 DataTypeDecl = Annotations* 'data' Path
   GenericArgList? DataConstructorList? ';'
 
-GenericArgList = '<' Name (',' Name)* '>'
+GenericArgList = '<' (Name (',' Name)*) '>'
 
-DataConstructorList = '=' DataConstructor ('|' DataConstructor)*
+DataConstructorList = '=' (DataConstructor ('|' DataConstructor)*)
 
 DataConstructor = Name ('(' DataConstructorArgList ')')?
 
@@ -228,7 +228,9 @@ ParFunctionDecl =
 FunctionNameList = (Name (',' Name)*)?
 
 InterfaceDecl = Annotations*
-  'interface' Path extends:ExtendsList? '{' (MethodSig ';')* '}'
+  'interface' Path extends:ExtendsList? '{' InterfaceItem* '}'
+
+InterfaceItem = MethodSig ';'
 
 ExtendsList = Path (',' Path)*
 
@@ -247,7 +249,7 @@ ClassDecl = Annotations*
   MethodDecl*
   '}'
 
-ImplementsList = 'implements' Path (',' Path)*
+ImplementsList = 'implements' (Path (',' Path)*)
 
 FieldDecl = Annotations* Type Name ('=' PureExpr)? ';'
 
@@ -265,14 +267,14 @@ Import = StarImport
   | UnqualifiedImport
 
 StarImport = 'import' '*' 'from' Path ';'
-FromImport = 'import' Name (',' Name)* 'from' Path ';'
-UnqualifiedImport = 'import' Name (',' Name)* ';'
+FromImport = 'import' (Name (',' Name)*) 'from' Path ';'
+UnqualifiedImport = 'import' (Name (',' Name)*) ';'
 
 Export = StarExport
   | PartialExport
 
 StarExport = 'export' '*' ('from' from:Path)? ';'
-PartialExport = 'export' Name (',' Name)* ('from' from:Path)? ';'
+PartialExport = 'export' (Name (',' Name)*) ('from' from:Path)? ';'
 
 Decl = 
     DataTypeDecl
