@@ -1,12 +1,13 @@
 pub mod ast;
+mod parsing;
 pub mod syntax_error;
-mod syntax_kind;
 pub mod syntax_node;
+mod validation;
 
 use std::{marker::PhantomData, sync::Arc};
 
 pub use ast::{AstNode, Module};
-pub use syntax_kind::SyntaxKind;
+pub use parser::{SyntaxKind, T};
 pub use syntax_node::*;
 
 pub use rowan::{SmolStr, TextRange, TextSize};
@@ -170,4 +171,31 @@ impl ast::Type {
     pub fn parse(text: &str) -> Result<Self, ()> {
         parsing::parse_text_fragment(text, parser::FragmentKind::Type)
     }
+}
+
+/// Matches a `SyntaxNode` against an `ast` type.
+///
+/// # Example:
+///
+/// ```ignore
+/// match_ast! {
+///     match node {
+///         ast::CallExpr(it) => { ... },
+///         ast::MethodCallExpr(it) => { ... },
+///         ast::MacroCall(it) => { ... },
+///         _ => None,
+///     }
+/// }
+/// ```
+#[macro_export]
+macro_rules! match_ast {
+    (match $node:ident { $($tt:tt)* }) => { match_ast!(match ($node) { $($tt)* }) };
+
+    (match ($node:expr) {
+        $( ast::$ast:ident($it:ident) => $res:expr, )*
+        _ => $catch_all:expr $(,)?
+    }) => {{
+        $( if let Some($it) = ast::$ast::cast($node.clone()) { $res } else )*
+        { $catch_all }
+    }};
 }

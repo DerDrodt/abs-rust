@@ -41,10 +41,10 @@ impl SyntaxTreeBuilder {
 
     pub fn finish(self) -> Parse<SyntaxNode> {
         let (green, errors) = self.finish_raw();
-        if cfg!(debug_assertions) {
+        /* if cfg!(debug_assertions) {
             let node = SyntaxNode::new_root(green.clone());
             crate::validation::validate_block_structure(&node);
-        }
+        } */
         Parse::new(green, errors)
     }
 

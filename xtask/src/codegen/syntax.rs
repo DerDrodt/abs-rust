@@ -25,7 +25,7 @@ pub fn generate_syntax() -> Result<()> {
     let grammar = abs_grammar();
     let ast = lower(&grammar);
 
-    let syntax_kinds_file = project_root().join("crates/abs_syntax/src/syntax_kind/generated.rs");
+    let syntax_kinds_file = project_root().join("crates/parser/src/syntax_kind/generated.rs");
     let syntax_kinds = generate_syntax_kinds(KINDS_SRC)?;
     update(syntax_kinds_file.as_path(), &syntax_kinds)?;
 
