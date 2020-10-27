@@ -17,7 +17,7 @@ Annotations = '[' Annotation (',' Annotation)* ']'
 Expr = PureExpr | EffExpr
 
 PureExpr =
-  | FnExpr
+    FnExpr
   | PartialFnExpr
   | VariadicFnExpr
   | ConstructorExpr
@@ -37,7 +37,7 @@ PureExpr =
 
 FnExpr = Path '(' PureExprList ')'
 
-PartialFnExpr = Path '(' FnList ')'  '(' PureArgs ')'
+PartialFnExpr = Path '(' FnList ')'  '(' PureExprList ')'
 
 VariadicFnExpr = Path '[' PureExprList ']'
   
@@ -57,8 +57,8 @@ BinaryExpr =
 NameExpr = ('this' '.')? Name
 
 Literal =
-   'int_number' | 'float_number'
-    | 'string'
+   value:('int_number' | 'float_number'
+    | 'string')
 
 ThisExpr = 'this'
 
@@ -72,7 +72,7 @@ WhenExpr = ('when' | 'if') condition:PureExpr 'then' then_branch:PureExpr 'else'
 
 CaseExpr = 'case' PureExpr '{' CaseExprBranch '}'
 
-LetExpr = 'let' 'in' PureExpr
+LetExpr = 'let' LetDefs 'in' PureExpr
 
 ParenExpr = '(' PureExpr ')'
 
@@ -94,7 +94,7 @@ EffExpr =
     GetExpr
   | NewExpr
   | AsyncCallExpr
-  | SynCallExpr
+  | SyncCallExpr
   | OriginalCallExpr
 
 GetExpr = PureExpr '.' 'get'
@@ -147,7 +147,7 @@ SwitchStmt = Annotations* ('switch' | 'case') '(' PureExpr ')' '{' CaseStmtBranc
 
 WhileStmt = Annotations* 'while' '(' condition:PureExpr ')' body:Stmt
 
-ForeachStmt Annotations* 'foreach' '(' var:Name (',' index:Name)? 'in' PureExpr ')' Stmt
+ForeachStmt = Annotations* 'foreach' '(' var:Name (',' index:Name)? 'in' PureExpr ')' Stmt
 
 TryCatchFinallyStmt = Annotations* 'try' Stmt 'catch' (('{' CaseStmtBranch* '}') | CaseStmtBranch) ('finally' finally:Stmt)
 
@@ -219,6 +219,98 @@ TypeSyn = Annotations* 'type' Path '=' Type ';'
 
 ExceptionDecl = Annotations* 'exception' Path ( '(' DataConstructorArgList ')' )? ';'
 
-FunctionDecl = Annotations* 'def' Type Path GenericArgList? ParamList '=' ('builtin' | body:PureExpr) ';'
+FunctionDecl = Annotations* 'def' Type Path GenericArgList? params:ParamList '=' ('builtin' | body:PureExpr) ';'
 
+ParFunctionDecl = 
+  Annotations* 'def' Type Path GenericArgList? 
+  '(' functions:FunctionNameList ')' params:ParamList '=' body:PureExpr ';'
 
+FunctionNameList = (Name (',' Name)*)?
+
+InterfaceDecl = Annotations*
+  'interface' Path extends:ExtendsList? '{' (MethodSig ';')* '}'
+
+ExtendsList = Path (',' Path)*
+
+MethodSig = Annotations* Type Name ParamList
+
+MethodDecl = MethodSig Block
+
+ClassDecl = Annotations*
+  'class' Path ParamList?
+  ImplementsList?
+  '{'
+  FieldDecl*
+  init:Block?
+  RecoverBlock?
+  TraitUse*
+  MethodDecl*
+  '}'
+
+ImplementsList = 'implements' Path (',' Path)*
+
+FieldDecl = Annotations* Type Name ('=' PureExpr)? ';'
+
+RecoverBlock = 
+  'recover' '{' CaseStmtBranch* '}'
+
+Module = 'module' Path ';'
+  Import*
+  Export*
+  Decl*
+  main:Block?
+
+Import = StarImport
+  | FromImport
+  | UnqualifiedImport
+
+StarImport = 'import' '*' 'from' Path ';'
+FromImport = 'import' Name (',' Name)* 'from' Path ';'
+UnqualifiedImport = 'import' Name (',' Name)* ';'
+
+Export = StarExport
+  | PartialExport
+
+StarExport = 'export' '*' ('from' from:Path)? ';'
+PartialExport = 'export' Name (',' Name)* ('from' from:Path)? ';'
+
+Decl = 
+    DataTypeDecl
+  | FunctionDecl
+  | ParFunctionDecl
+  | TypeSyn
+  | ExceptionDecl
+  | InterfaceDecl
+  | ClassDecl
+  | TraitDecl
+
+TraitDecl = Annotations* 'trait' Path '=' TraitExpr
+
+TraitExpr = BasicTraitExpr TraitOp*
+
+BasicTraitExpr = 
+    TraitMethodSet
+  | TraitMethod
+  | TraitName
+
+TraitMethodSet = '{' MethodDecl* '}'
+
+TraitMethod = MethodDecl
+
+TraitName = Name
+
+TraitOp = 
+    TraitRemoveSig
+  | TraitRemoveSet
+  | TraitAdd
+  | TraitModifies
+
+TraitRemoveSig = 'removes' MethodSig*
+
+TraitRemoveSet = 'removes' '{' MethodSig* '}'
+
+TraitAdd = 'adds' BasicTraitExpr
+
+TraitModifies = 'modifies' BasicTraitExpr
+
+TraitUse = 'uses' TraitExpr ';'
