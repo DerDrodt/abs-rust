@@ -6,7 +6,7 @@ pub use nodes::*;
 pub use tokens::*;
 pub use traits::*;
 
-use crate::SyntaxKind::{self, *};
+use crate::SyntaxKind::{self};
 
 use super::AstNode;
 
@@ -27,13 +27,11 @@ impl AstNode for Expr {
     where
         Self: Sized,
     {
-        if let Some(e) = PureExpr::cast(syntax) {
-            Some(Expr::PureExpr(e))
-        } else if let Some(e) = EffExpr::cast(syntax) {
-            Some(Expr::EffExpr(e))
+        Some(if PureExpr::can_cast(syntax.kind()) {
+            Expr::PureExpr(PureExpr::cast(syntax)?)
         } else {
-            None
-        }
+            Expr::EffExpr(EffExpr::cast(syntax)?)
+        })
     }
 
     fn syntax(&self) -> &crate::SyntaxNode {
