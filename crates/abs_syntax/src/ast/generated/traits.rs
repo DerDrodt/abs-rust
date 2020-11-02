@@ -1,7 +1,13 @@
 use crate::ast::{self, support, AstNode};
 
-pub trait NameOwner: AstNode {
-    fn name(&self) -> Option<ast::Name> {
+pub trait VarNameOwner: AstNode {
+    fn name(&self) -> Option<ast::VarName> {
+        support::child(self.syntax())
+    }
+}
+
+pub trait TypeNameOwner: AstNode {
+    fn name(&self) -> Option<ast::TypeName> {
         support::child(self.syntax())
     }
 }

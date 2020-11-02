@@ -406,7 +406,8 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> Result<String> {
         macro_rules! T {
             #([#punctuation_values] => { $crate::SyntaxKind::#punctuation };)*
             #([#all_keywords_idents] => { $crate::SyntaxKind::#all_keywords };)*
-            [ident] => { $crate::SyntaxKind::IDENT };
+            [lower_ident] => { $crate::SyntaxKind::LOW_IDENT };
+            [cap_ident] => { $crate::SyntaxKind::CAP_IDENT };
         }
     };
 
@@ -718,7 +719,8 @@ fn extract_enums(ast: &mut AstSrc) {
 fn extract_struct_traits(ast: &mut AstSrc) {
     let traits: &[(&str, &[&str])] = &[
         ("AnnotationsOwner", &["annotation"]),
-        ("NameOwner", &["name"]),
+        ("VarNameOwner", &["var_name"]),
+        ("TypeNameOwner", &["type_name"]),
         ("PureExprListOwner", &["pure_expr_list"]),
     ];
 

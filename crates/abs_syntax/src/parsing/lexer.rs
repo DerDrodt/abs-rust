@@ -44,9 +44,14 @@ pub fn tokenize(text: &str) -> (Vec<Token>, Vec<SyntaxError>) {
 
     let mut offset: usize = 0;
 
-    for (tok, err_msg) in tokenizer(text) {
+    for (mut tok, err_msg) in tokenizer(text) {
         let tok_len = tok.len;
         let tok_range = TextRange::at(offset.try_into().unwrap(), tok_len);
+
+        let tok_text = &text[tok_range];
+        if let Some(kw) = SyntaxKind::from_keyword(tok_text) {
+            tok.kind = kw;
+        }
 
         tokens.push(tok);
 
@@ -105,10 +110,10 @@ impl<'a> Cursor<'a> {
         self.nth_char(0)
     }
 
-    /// Peeks the second symbol from the input stream without consuming it.
+    /* /// Peeks the second symbol from the input stream without consuming it.
     pub(crate) fn second(&self) -> char {
         self.nth_char(1)
-    }
+    } */
 
     /// Checks if there is nothing more to consume.
     pub(crate) fn is_eof(&self) -> bool {
@@ -137,7 +142,7 @@ impl Cursor<'_> {
     fn advance_token(&mut self) -> (Token, Option<&'static str>) {
         let first_char = self.bump().unwrap();
 
-        let kind = match first_char {
+        let mut kind = match first_char {
             '/' => match self.first() {
                 '/' => self.line_comment(),
                 '*' => return self.block_comment(),
@@ -146,7 +151,9 @@ impl Cursor<'_> {
 
             c if is_whitespace(c) => self.whitespace(),
 
-            c if is_id_start(c) => self.ident(),
+            'a'..='z' => self.ident(false),
+
+            'A'..='Z' => self.ident(true),
 
             c @ '0'..='9' => return self.number(c),
 
@@ -187,15 +194,14 @@ impl Cursor<'_> {
             _ => SyntaxKind::ERROR,
         };
 
-        //TODO: Handle _
+        let len: TextSize = self.len_consumed().try_into().unwrap();
+        let len_u32: u32 = len.into();
 
-        (
-            Token {
-                kind,
-                len: self.len_consumed().try_into().unwrap(),
-            },
-            None,
-        )
+        if first_char == '_' && len_u32 == 1 {
+            kind = SyntaxKind::UNDERSCORE
+        }
+
+        (Token { kind, len }, None)
     }
 
     fn line_comment(&mut self) -> SyntaxKind {
@@ -239,9 +245,13 @@ impl Cursor<'_> {
         SyntaxKind::WHITESPACE
     }
 
-    fn ident(&mut self) -> SyntaxKind {
+    fn ident(&mut self, cap: bool) -> SyntaxKind {
         self.eat_while(is_id_continue);
-        SyntaxKind::IDENT
+        if cap {
+            SyntaxKind::CAP_IDENT
+        } else {
+            SyntaxKind::LOW_IDENT
+        }
     }
 
     fn number(&mut self, first_digit: char) -> (Token, Option<&'static str>) {

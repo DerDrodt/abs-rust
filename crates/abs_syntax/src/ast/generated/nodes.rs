@@ -6,12 +6,21 @@ use crate::{
     SyntaxNode, SyntaxToken, T,
 };
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Name {
+pub struct VarName {
     pub(crate) syntax: SyntaxNode,
 }
-impl Name {
-    pub fn ident_token(&self) -> Option<SyntaxToken> {
-        support::token(&self.syntax, T![ident])
+impl VarName {
+    pub fn lower_ident_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![lower_ident])
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TypeName {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TypeName {
+    pub fn cap_ident_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![cap_ident])
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -19,13 +28,28 @@ pub struct Path {
     pub(crate) syntax: SyntaxNode,
 }
 impl Path {
+    pub fn qualifier(&self) -> Option<TypePath> {
+        support::child(&self.syntax)
+    }
+    pub fn dot_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![.])
+    }
+    pub fn segment(&self) -> Option<VarName> {
+        support::child(&self.syntax)
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TypePath {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TypePath {
     pub fn qualifier(&self) -> Option<Path> {
         support::child(&self.syntax)
     }
     pub fn dot_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![.])
     }
-    pub fn segment(&self) -> Option<Name> {
+    pub fn segment(&self) -> Option<TypeName> {
         support::child(&self.syntax)
     }
 }
@@ -48,7 +72,7 @@ impl ParamList {
 pub struct Param {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for Param {}
+impl ast::VarNameOwner for Param {}
 impl Param {
     pub fn annotationss(&self) -> AstChildren<Annotations> {
         support::children(&self.syntax)
@@ -80,7 +104,7 @@ impl Type {
     pub fn annotationss(&self) -> AstChildren<Annotations> {
         support::children(&self.syntax)
     }
-    pub fn path(&self) -> Option<Path> {
+    pub fn type_path(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn l_angle_token(&self) -> Option<SyntaxToken> {
@@ -165,7 +189,7 @@ pub struct ConstructorExpr {
 }
 impl ast::PureExprListOwner for ConstructorExpr {}
 impl ConstructorExpr {
-    pub fn path(&self) -> Option<Path> {
+    pub fn type_path(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> {
@@ -193,7 +217,7 @@ impl BinaryExpr {}
 pub struct NameExpr {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for NameExpr {}
+impl ast::VarNameOwner for NameExpr {}
 impl NameExpr {
     pub fn this_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![this])
@@ -229,7 +253,7 @@ impl NullExpr {
 pub struct ImplementsExpr {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for ImplementsExpr {}
+impl ast::TypeNameOwner for ImplementsExpr {}
 impl ImplementsExpr {
     pub fn pure_expr(&self) -> Option<PureExpr> {
         support::child(&self.syntax)
@@ -242,7 +266,7 @@ impl ImplementsExpr {
 pub struct AsExpr {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for AsExpr {}
+impl ast::TypeNameOwner for AsExpr {}
 impl AsExpr {
     pub fn pure_expr(&self) -> Option<PureExpr> {
         support::child(&self.syntax)
@@ -399,7 +423,7 @@ impl AnonFn {
 pub struct LetDef {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for LetDef {}
+impl ast::VarNameOwner for LetDef {}
 impl LetDef {
     pub fn l_paren_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T!['('])
@@ -444,7 +468,7 @@ impl NewExpr {
     pub fn local_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![local])
     }
-    pub fn class(&self) -> Option<Path> {
+    pub fn class(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> {
@@ -458,7 +482,7 @@ impl NewExpr {
 pub struct AsyncCallExpr {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for AsyncCallExpr {}
+impl ast::VarNameOwner for AsyncCallExpr {}
 impl ast::PureExprListOwner for AsyncCallExpr {}
 impl AsyncCallExpr {
     pub fn await_token(&self) -> Option<SyntaxToken> {
@@ -481,7 +505,7 @@ impl AsyncCallExpr {
 pub struct SyncCallExpr {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for SyncCallExpr {}
+impl ast::VarNameOwner for SyncCallExpr {}
 impl ast::PureExprListOwner for SyncCallExpr {}
 impl SyncCallExpr {
     pub fn callee(&self) -> Option<PureExpr> {
@@ -523,7 +547,7 @@ impl OriginalCallExpr {
 pub struct VarDeclStmt {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for VarDeclStmt {}
+impl ast::VarNameOwner for VarDeclStmt {}
 impl VarDeclStmt {
     pub fn annotationss(&self) -> AstChildren<Annotations> {
         support::children(&self.syntax)
@@ -741,7 +765,7 @@ impl ForeachStmt {
     pub fn stmt(&self) -> Option<Stmt> {
         support::child(&self.syntax)
     }
-    pub fn fn_list_param(&self) -> Option<FnListParam> {
+    pub fn any_name(&self) -> Option<AnyName> {
         support::child(&self.syntax)
     }
 }
@@ -1002,14 +1026,14 @@ impl StringPattern {}
 pub struct VarPattern {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for VarPattern {}
+impl ast::VarNameOwner for VarPattern {}
 impl VarPattern {}
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ConstructorPattern {
     pub(crate) syntax: SyntaxNode,
 }
 impl ConstructorPattern {
-    pub fn path(&self) -> Option<Path> {
+    pub fn type_path(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> {
@@ -1033,7 +1057,7 @@ impl DataTypeDecl {
     pub fn data_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![data])
     }
-    pub fn path(&self) -> Option<Path> {
+    pub fn type_path(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn generic_arg_list(&self) -> Option<GenericArgList> {
@@ -1054,7 +1078,7 @@ impl GenericArgList {
     pub fn l_angle_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![<])
     }
-    pub fn names(&self) -> AstChildren<Name> {
+    pub fn type_names(&self) -> AstChildren<TypeName> {
         support::children(&self.syntax)
     }
     pub fn r_angle_token(&self) -> Option<SyntaxToken> {
@@ -1077,7 +1101,7 @@ impl DataConstructorList {
 pub struct DataConstructor {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for DataConstructor {}
+impl ast::TypeNameOwner for DataConstructor {}
 impl DataConstructor {
     pub fn l_paren_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T!['('])
@@ -1102,7 +1126,7 @@ impl DataConstructorArgList {
 pub struct DataConstructorArg {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for DataConstructorArg {}
+impl ast::TypeNameOwner for DataConstructorArg {}
 impl DataConstructorArg {
     pub fn ty(&self) -> Option<Type> {
         support::child(&self.syntax)
@@ -1119,7 +1143,7 @@ impl TypeSyn {
     pub fn type_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![type])
     }
-    pub fn path(&self) -> Option<Path> {
+    pub fn type_path(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn eq_token(&self) -> Option<SyntaxToken> {
@@ -1143,7 +1167,7 @@ impl ExceptionDecl {
     pub fn exception_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![exception])
     }
-    pub fn path(&self) -> Option<Path> {
+    pub fn type_path(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> {
@@ -1242,7 +1266,7 @@ pub struct FunctionNameList {
     pub(crate) syntax: SyntaxNode,
 }
 impl FunctionNameList {
-    pub fn names(&self) -> AstChildren<Name> {
+    pub fn var_names(&self) -> AstChildren<VarName> {
         support::children(&self.syntax)
     }
 }
@@ -1257,7 +1281,7 @@ impl InterfaceDecl {
     pub fn interface_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![interface])
     }
-    pub fn path(&self) -> Option<Path> {
+    pub fn type_path(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn extends(&self) -> Option<ExtendsList> {
@@ -1278,7 +1302,7 @@ pub struct ExtendsList {
     pub(crate) syntax: SyntaxNode,
 }
 impl ExtendsList {
-    pub fn paths(&self) -> AstChildren<Path> {
+    pub fn type_paths(&self) -> AstChildren<TypePath> {
         support::children(&self.syntax)
     }
 }
@@ -1298,7 +1322,7 @@ impl InterfaceItem {
 pub struct MethodSig {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for MethodSig {}
+impl ast::VarNameOwner for MethodSig {}
 impl MethodSig {
     pub fn annotationss(&self) -> AstChildren<Annotations> {
         support::children(&self.syntax)
@@ -1333,7 +1357,7 @@ impl ClassDecl {
     pub fn class_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![class])
     }
-    pub fn path(&self) -> Option<Path> {
+    pub fn type_path(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn param_list(&self) -> Option<ParamList> {
@@ -1372,7 +1396,7 @@ impl ImplementsList {
     pub fn implements_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![implements])
     }
-    pub fn paths(&self) -> AstChildren<Path> {
+    pub fn type_paths(&self) -> AstChildren<TypePath> {
         support::children(&self.syntax)
     }
 }
@@ -1380,7 +1404,7 @@ impl ImplementsList {
 pub struct FieldDecl {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for FieldDecl {}
+impl ast::VarNameOwner for FieldDecl {}
 impl FieldDecl {
     pub fn annotationss(&self) -> AstChildren<Annotations> {
         support::children(&self.syntax)
@@ -1439,7 +1463,7 @@ impl Module {
     pub fn module_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![module])
     }
-    pub fn path(&self) -> Option<Path> {
+    pub fn type_path(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn semicolon_token(&self) -> Option<SyntaxToken> {
@@ -1472,7 +1496,7 @@ impl StarImport {
     pub fn from_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![from])
     }
-    pub fn path(&self) -> Option<Path> {
+    pub fn type_path(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn semicolon_token(&self) -> Option<SyntaxToken> {
@@ -1487,13 +1511,13 @@ impl FromImport {
     pub fn import_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![import])
     }
-    pub fn names(&self) -> AstChildren<Name> {
+    pub fn any_names(&self) -> AstChildren<AnyName> {
         support::children(&self.syntax)
     }
     pub fn from_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![from])
     }
-    pub fn path(&self) -> Option<Path> {
+    pub fn type_path(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn semicolon_token(&self) -> Option<SyntaxToken> {
@@ -1508,7 +1532,7 @@ impl UnqualifiedImport {
     pub fn import_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![import])
     }
-    pub fn names(&self) -> AstChildren<Name> {
+    pub fn any_names(&self) -> AstChildren<AnyName> {
         support::children(&self.syntax)
     }
     pub fn semicolon_token(&self) -> Option<SyntaxToken> {
@@ -1529,7 +1553,7 @@ impl StarExport {
     pub fn from_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![from])
     }
-    pub fn from(&self) -> Option<Path> {
+    pub fn from(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn semicolon_token(&self) -> Option<SyntaxToken> {
@@ -1544,13 +1568,13 @@ impl PartialExport {
     pub fn export_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![export])
     }
-    pub fn names(&self) -> AstChildren<Name> {
+    pub fn any_names(&self) -> AstChildren<AnyName> {
         support::children(&self.syntax)
     }
     pub fn from_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![from])
     }
-    pub fn from(&self) -> Option<Path> {
+    pub fn from(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn semicolon_token(&self) -> Option<SyntaxToken> {
@@ -1568,7 +1592,7 @@ impl TraitDecl {
     pub fn trait_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![trait])
     }
-    pub fn path(&self) -> Option<Path> {
+    pub fn type_path(&self) -> Option<TypePath> {
         support::child(&self.syntax)
     }
     pub fn eq_token(&self) -> Option<SyntaxToken> {
@@ -1618,7 +1642,7 @@ impl TraitMethod {
 pub struct TraitName {
     pub(crate) syntax: SyntaxNode,
 }
-impl ast::NameOwner for TraitName {}
+impl ast::TypeNameOwner for TraitName {}
 impl TraitName {}
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TraitRemoveSig {
@@ -1675,6 +1699,11 @@ impl TraitModifies {
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum AnyName {
+    VarName(VarName),
+    TypeName(TypeName),
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PureExpr {
     FnExpr(FnExpr),
     PartialFnExpr(PartialFnExpr),
@@ -1708,7 +1737,7 @@ pub enum EffExpr {
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum FnListParam {
-    Name(Name),
+    VarName(VarName),
     AnonFn(AnonFn),
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1782,9 +1811,24 @@ pub enum TraitOp {
     TraitAdd(TraitAdd),
     TraitModifies(TraitModifies),
 }
-impl AstNode for Name {
+impl AstNode for VarName {
     fn can_cast(kind: SyntaxKind) -> bool {
-        kind == NAME
+        kind == VAR_NAME
+    }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+impl AstNode for TypeName {
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == TYPE_NAME
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
@@ -1800,6 +1844,21 @@ impl AstNode for Name {
 impl AstNode for Path {
     fn can_cast(kind: SyntaxKind) -> bool {
         kind == PATH
+    }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode {
+        &self.syntax
+    }
+}
+impl AstNode for TypePath {
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == TYPE_PATH
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
@@ -3252,6 +3311,38 @@ impl AstNode for TraitModifies {
         &self.syntax
     }
 }
+impl From<VarName> for AnyName {
+    fn from(node: VarName) -> AnyName {
+        AnyName::VarName(node)
+    }
+}
+impl From<TypeName> for AnyName {
+    fn from(node: TypeName) -> AnyName {
+        AnyName::TypeName(node)
+    }
+}
+impl AstNode for AnyName {
+    fn can_cast(kind: SyntaxKind) -> bool {
+        match kind {
+            VAR_NAME | TYPE_NAME => true,
+            _ => false,
+        }
+    }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        let res = match syntax.kind() {
+            VAR_NAME => AnyName::VarName(VarName { syntax }),
+            TYPE_NAME => AnyName::TypeName(TypeName { syntax }),
+            _ => return None,
+        };
+        Some(res)
+    }
+    fn syntax(&self) -> &SyntaxNode {
+        match self {
+            AnyName::VarName(it) => &it.syntax,
+            AnyName::TypeName(it) => &it.syntax,
+        }
+    }
+}
 impl From<FnExpr> for PureExpr {
     fn from(node: FnExpr) -> PureExpr {
         PureExpr::FnExpr(node)
@@ -3447,9 +3538,9 @@ impl AstNode for EffExpr {
         }
     }
 }
-impl From<Name> for FnListParam {
-    fn from(node: Name) -> FnListParam {
-        FnListParam::Name(node)
+impl From<VarName> for FnListParam {
+    fn from(node: VarName) -> FnListParam {
+        FnListParam::VarName(node)
     }
 }
 impl From<AnonFn> for FnListParam {
@@ -3460,13 +3551,13 @@ impl From<AnonFn> for FnListParam {
 impl AstNode for FnListParam {
     fn can_cast(kind: SyntaxKind) -> bool {
         match kind {
-            NAME | ANON_FN => true,
+            VAR_NAME | ANON_FN => true,
             _ => false,
         }
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
-            NAME => FnListParam::Name(Name { syntax }),
+            VAR_NAME => FnListParam::VarName(VarName { syntax }),
             ANON_FN => FnListParam::AnonFn(AnonFn { syntax }),
             _ => return None,
         };
@@ -3474,7 +3565,7 @@ impl AstNode for FnListParam {
     }
     fn syntax(&self) -> &SyntaxNode {
         match self {
-            FnListParam::Name(it) => &it.syntax,
+            FnListParam::VarName(it) => &it.syntax,
             FnListParam::AnonFn(it) => &it.syntax,
         }
     }
@@ -3971,6 +4062,11 @@ impl AstNode for TraitOp {
         }
     }
 }
+impl std::fmt::Display for AnyName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
 impl std::fmt::Display for PureExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
@@ -4031,12 +4127,22 @@ impl std::fmt::Display for TraitOp {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for Name {
+impl std::fmt::Display for VarName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TypeName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
 impl std::fmt::Display for Path {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TypePath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

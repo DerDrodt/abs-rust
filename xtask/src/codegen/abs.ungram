@@ -1,13 +1,20 @@
-Name = 'ident'
+VarName = 'lower_ident'
+
+TypeName = 'cap_ident'
+
+AnyName = VarName | TypeName
 
 Path =
-  (qualifier:Path '.')? segment:Name
+  (qualifier:TypePath '.')? segment:VarName
+
+TypePath = 
+  (qualifier:Path '.')? segment:TypeName
 
 ParamList = '(' (Param (',' Param)*)? ')'
 
-Param = Annotations* Type Name
+Param = Annotations* Type VarName
 
-Type = Annotations* Path ('<' (Type (',' Type)*) '>')?
+Type = Annotations* TypePath ('<' (Type (',' Type)*) '>')?
 
 Annotation = (Type ':')? PureExpr
 Annotations = '[' (Annotation (',' Annotation)*) ']'
@@ -41,7 +48,7 @@ PartialFnExpr = Path '(' FnList ')'  '(' PureExprList ')'
 
 VariadicFnExpr = Path '[' PureExprList ']'
   
-ConstructorExpr = Path ('(' PureExprList ')')?
+ConstructorExpr = TypePath ('(' PureExprList ')')?
 
 UnaryExpr = op:('-' | '!') PureExpr
 
@@ -54,7 +61,7 @@ BinaryExpr =
   )
   rhs:Expr
 
-NameExpr = ('this' '.')? Name
+NameExpr = ('this' '.')? VarName
 
 Literal =
    value:('int_number' | 'float_number'
@@ -64,9 +71,9 @@ ThisExpr = 'this'
 
 NullExpr = 'null'
 
-ImplementsExpr = PureExpr 'implements' Name
+ImplementsExpr = PureExpr 'implements' TypeName
 
-AsExpr = PureExpr 'as' Name
+AsExpr = PureExpr 'as' TypeName
 
 WhenExpr = ('when' | 'if') condition:PureExpr 'then' then_branch:PureExpr 'else' else_branch:PureExpr
 
@@ -80,7 +87,7 @@ PureExprList = (PureExpr (',' PureExpr)*)?
 
 FnList = FnListParam (',' FnListParam)?
 
-FnListParam = Name | AnonFn
+FnListParam = VarName | AnonFn
 
 AnonFn = ParamList '=>' PureExpr
 
@@ -88,7 +95,7 @@ CaseExprBranch = '|'? Pattern '=>' PureExpr ';'?
 
 LetDefs = LetDef LetDef*
 
-LetDef = ( '(' Type Name '=' PureExpr ')' ) | ( Type Name '=' PureExpr )
+LetDef = ( '(' Type VarName '=' PureExpr ')' ) | ( Type VarName '=' PureExpr )
 
 EffExpr = 
     GetExpr
@@ -99,11 +106,11 @@ EffExpr =
 
 GetExpr = PureExpr '.' 'get'
 
-NewExpr = 'new' 'local'? class:Path '(' PureExprList ')'
+NewExpr = 'new' 'local'? class:TypePath '(' PureExprList ')'
 
-AsyncCallExpr = 'await'? callee:PureExpr '!' Name '(' PureExprList ')'
+AsyncCallExpr = 'await'? callee:PureExpr '!' VarName '(' PureExprList ')'
 
-SyncCallExpr = callee:PureExpr '.' Name '(' PureExprList ')'
+SyncCallExpr = callee:PureExpr '.' VarName '(' PureExprList ')'
 
 OriginalCallExpr = (('int_number' | 'core') '.' )? 'original' '(' PureExprList ')'
 
@@ -129,7 +136,7 @@ Stmt =
   | MoveCogToStmt
   | ExprStmt
 
-VarDeclStmt = Annotations* Type Name ('=' Expr)? ';'
+VarDeclStmt = Annotations* Type VarName ('=' Expr)? ';'
 
 AssignStmt = Annotations* NameExpr '=' Expr ';'
 
@@ -147,7 +154,7 @@ SwitchStmt = Annotations* ('switch' | 'case') '(' PureExpr ')' '{' CaseStmtBranc
 
 WhileStmt = Annotations* 'while' '(' condition:PureExpr ')' body:Stmt
 
-ForeachStmt = Annotations* 'foreach' '(' var:Name (',' index:Name)? 'in' PureExpr ')' Stmt
+ForeachStmt = Annotations* 'foreach' '(' var:VarName (',' index:VarName)? 'in' PureExpr ')' Stmt
 
 TryCatchFinallyStmt = Annotations* 'try' Stmt 'catch' (('{' CaseStmtBranch* '}') | CaseStmtBranch) ('finally' finally:Stmt)
 
@@ -196,28 +203,28 @@ IntPattern = 'int_number'
 
 StringPattern = 'string'
 
-VarPattern = Name
+VarPattern = VarName
 
-ConstructorPattern = Path ( '(' (Pattern (',' Pattern)*)? ')' )?
+ConstructorPattern = TypePath ( '(' (Pattern (',' Pattern)*)? ')' )?
 
 // Decl
 
-DataTypeDecl = Annotations* 'data' Path
+DataTypeDecl = Annotations* 'data' TypePath
   GenericArgList? DataConstructorList? ';'
 
-GenericArgList = '<' (Name (',' Name)*) '>'
+GenericArgList = '<' (TypeName (',' TypeName)*) '>'
 
 DataConstructorList = '=' (DataConstructor ('|' DataConstructor)*)
 
-DataConstructor = Name ('(' DataConstructorArgList ')')?
+DataConstructor = TypeName ('(' DataConstructorArgList ')')?
 
 DataConstructorArgList = DataConstructorArg (',' DataConstructorArg)*
 
-DataConstructorArg = Type Name?
+DataConstructorArg = Type TypeName?
 
-TypeSyn = Annotations* 'type' Path '=' Type ';'
+TypeSyn = Annotations* 'type' TypePath '=' Type ';'
 
-ExceptionDecl = Annotations* 'exception' Path ( '(' DataConstructorArgList ')' )? ';'
+ExceptionDecl = Annotations* 'exception' TypePath ( '(' DataConstructorArgList ')' )? ';'
 
 FunctionDecl = Annotations* 'def' Type Path GenericArgList? params:ParamList '=' ('builtin' | body:PureExpr) ';'
 
@@ -225,21 +232,21 @@ ParFunctionDecl =
   Annotations* 'def' Type Path GenericArgList? 
   '(' functions:FunctionNameList ')' params:ParamList '=' body:PureExpr ';'
 
-FunctionNameList = (Name (',' Name)*)?
+FunctionNameList = (VarName (',' VarName)*)?
 
 InterfaceDecl = Annotations*
-  'interface' Path extends:ExtendsList? '{' InterfaceItem* '}'
+  'interface' TypePath extends:ExtendsList? '{' InterfaceItem* '}'
 
 InterfaceItem = MethodSig ';'
 
-ExtendsList = Path (',' Path)*
+ExtendsList = TypePath (',' TypePath)*
 
-MethodSig = Annotations* Type Name ParamList
+MethodSig = Annotations* Type VarName ParamList
 
 MethodDecl = MethodSig Block
 
 ClassDecl = Annotations*
-  'class' Path ParamList?
+  'class' TypePath ParamList?
   ImplementsList?
   '{'
   FieldDecl*
@@ -249,14 +256,14 @@ ClassDecl = Annotations*
   MethodDecl*
   '}'
 
-ImplementsList = 'implements' (Path (',' Path)*)
+ImplementsList = 'implements' (TypePath (',' TypePath)*)
 
-FieldDecl = Annotations* Type Name ('=' PureExpr)? ';'
+FieldDecl = Annotations* Type VarName ('=' PureExpr)? ';'
 
 RecoverBlock = 
   'recover' '{' CaseStmtBranch* '}'
 
-Module = 'module' Path ';'
+Module = 'module' TypePath ';'
   Import*
   Export*
   Decl*
@@ -266,15 +273,15 @@ Import = StarImport
   | FromImport
   | UnqualifiedImport
 
-StarImport = 'import' '*' 'from' Path ';'
-FromImport = 'import' (Name (',' Name)*) 'from' Path ';'
-UnqualifiedImport = 'import' (Name (',' Name)*) ';'
+StarImport = 'import' '*' 'from' TypePath ';'
+FromImport = 'import' (AnyName (',' AnyName)*) 'from' TypePath ';'
+UnqualifiedImport = 'import' (AnyName (',' AnyName)*) ';'
 
 Export = StarExport
   | PartialExport
 
-StarExport = 'export' '*' ('from' from:Path)? ';'
-PartialExport = 'export' (Name (',' Name)*) ('from' from:Path)? ';'
+StarExport = 'export' '*' ('from' from:TypePath)? ';'
+PartialExport = 'export' (AnyName (',' AnyName)*) ('from' from:TypePath)? ';'
 
 Decl = 
     DataTypeDecl
@@ -286,7 +293,7 @@ Decl =
   | ClassDecl
   | TraitDecl
 
-TraitDecl = Annotations* 'trait' Path '=' TraitExpr
+TraitDecl = Annotations* 'trait' TypePath '=' TraitExpr
 
 TraitExpr = BasicTraitExpr TraitOp*
 
@@ -299,7 +306,7 @@ TraitMethodSet = '{' MethodDecl* '}'
 
 TraitMethod = MethodDecl
 
-TraitName = Name
+TraitName = TypeName
 
 TraitOp = 
     TraitRemoveSig

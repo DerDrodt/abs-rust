@@ -3,11 +3,8 @@ use std::mem;
 use parser::{ParseError, TreeSink};
 
 use crate::{
-    parsing::Token,
-    syntax_node::GreenNode,
-    SmolStr, SyntaxError,
-    SyntaxKind::{self, *},
-    SyntaxTreeBuilder, TextRange, TextSize,
+    parsing::Token, syntax_node::GreenNode, SmolStr, SyntaxError, SyntaxKind, SyntaxTreeBuilder,
+    TextRange, TextSize,
 };
 
 /// Bridges the parser with our specific syntax tree representation.
@@ -142,8 +139,8 @@ impl<'a> TextTreeSink<'a> {
 }
 
 fn n_attached_trivias<'a>(
-    kind: SyntaxKind,
-    trivias: impl Iterator<Item = (SyntaxKind, &'a str)>,
+    _kind: SyntaxKind,
+    _trivias: impl Iterator<Item = (SyntaxKind, &'a str)>,
 ) -> usize {
     0
 }
