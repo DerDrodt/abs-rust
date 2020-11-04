@@ -31,4 +31,5 @@ fn annotation(p: &mut Parser) {
         p.expect(COLON);
     }
     pure_expr(p);
+    m.complete(p, ANNOTATION);
 }

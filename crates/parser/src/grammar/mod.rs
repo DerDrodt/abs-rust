@@ -4,6 +4,7 @@ use crate::{token_set::TokenSet, SyntaxKind::*};
 mod annotations;
 mod branches;
 mod expressions;
+mod gen_args;
 mod items;
 mod params;
 mod pattern;
@@ -12,6 +13,7 @@ mod stmts;
 pub use annotations::*;
 pub(crate) use branches::*;
 pub use expressions::*;
+pub(crate) use gen_args::*;
 pub use items::*;
 pub use params::*;
 pub(crate) use pattern::*;
@@ -73,10 +75,6 @@ pub(crate) fn ty(p: &mut Parser) {
         p.expect(T![>]);
     }
     m.complete(p, TYPE);
-}
-
-pub(crate) fn decl(p: &mut Parser) {
-    todo!()
 }
 
 pub(crate) fn block(p: &mut Parser) {

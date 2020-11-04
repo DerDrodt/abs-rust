@@ -250,7 +250,7 @@ impl Marker {
         if idx == p.events.len() - 1 {
             match p.events.pop() {
                 Some(Event::Start {
-                    kind: TOMBSTONE,
+                    kind: SyntaxKind::TOMBSTONE,
                     forward_parent: None,
                 }) => (),
                 _ => unreachable!(),

@@ -3,6 +3,8 @@ use crate::{
     grammar::Parser, parser::Marker, SyntaxKind::*, T,
 };
 
+use super::{method_decl, trait_use};
+
 pub(crate) fn class(p: &mut Parser, m: Marker) {
     p.bump(T![class]);
     ty_path(p);
@@ -24,7 +26,13 @@ pub(crate) fn class(p: &mut Parser, m: Marker) {
         recover_block(p);
     }
 
-    if p.at(T![uses]) {}
+    while p.at(T![uses]) {
+        trait_use(p);
+    }
+
+    while !p.at(EOF) && !p.at(T!['}']) {
+        method_decl(p);
+    }
 
     p.expect(T!['}']);
     m.complete(p, CLASS_DECL);
@@ -54,26 +62,3 @@ fn recover_block(p: &mut Parser) {
     p.expect(T!['}']);
     m.complete(p, RECOVER_BLOCK);
 }
-
-fn trait_use(p: &mut Parser) {
-    let m = p.start();
-    p.bump(T![uses]);
-
-    trait_expr(p);
-
-    p.expect(T![;]);
-    m.complete(p, TRAIT_USE);
-}
-
-fn trait_expr(p: &mut Parser) {
-    let m = p.start();
-    basic_trait_expr(p);
-    while !p.at(T![;]) && !p.at(EOF) {
-        trait_op(p);
-    }
-    m.complete(p, TRAIT_EXPR);
-}
-
-fn basic_trait_expr(p: &mut Parser) {}
-
-fn trait_op(p: &mut Parser) {}

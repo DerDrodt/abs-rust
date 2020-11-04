@@ -239,7 +239,7 @@ InterfaceDecl = Annotations*
 
 InterfaceItem = MethodSig ';'
 
-ExtendsList = TypePath (',' TypePath)*
+ExtendsList = 'extends' (TypePath (',' TypePath)*)
 
 MethodSig = Annotations* Type VarName ParamList
 
