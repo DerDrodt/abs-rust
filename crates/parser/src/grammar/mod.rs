@@ -10,12 +10,12 @@ mod params;
 mod pattern;
 mod stmts;
 
-pub use annotations::*;
+pub(crate) use annotations::*;
 pub(crate) use branches::*;
-pub use expressions::*;
+pub(crate) use expressions::*;
 pub(crate) use gen_args::*;
-pub use items::*;
-pub use params::*;
+pub(crate) use items::*;
+pub(crate) use params::*;
 pub(crate) use pattern::*;
 
 pub(crate) fn root(p: &mut Parser) {

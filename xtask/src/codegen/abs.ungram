@@ -53,13 +53,13 @@ ConstructorExpr = TypePath ('(' PureExprList ')')?
 UnaryExpr = op:('-' | '!') PureExpr
 
 BinaryExpr = 
-  lhs:Expr 
+  lhs:PureExpr 
   op:(
     '||' | '&&'
     | '==' | '!=' | '<=' | '>=' | '>' | '<'
     | '+' | '-' | '*' | '/' | '%'
   )
-  rhs:Expr
+  rhs:PureExpr
 
 NameExpr = ('this' '.')? VarName
 
@@ -77,7 +77,7 @@ AsExpr = PureExpr 'as' TypeName
 
 WhenExpr = ('when' | 'if') condition:PureExpr 'then' then_branch:PureExpr 'else' else_branch:PureExpr
 
-CaseExpr = 'case' PureExpr '{' CaseExprBranch '}'
+CaseExpr = 'case' PureExpr '{' CaseExprBranch* '}'
 
 LetExpr = 'let' LetDefs 'in' PureExpr
 
